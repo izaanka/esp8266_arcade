@@ -26,7 +26,7 @@ const bool inv3x3[9][9] = {
 bool grid[6][12]; 
 int cursorIndex = 0; 
 bool showHint = false;
-int loMenuOption = 0; 
+int loMenuOption = 0;
 int gridW = 3, gridH = 3, totalTiles = 9;
 int spacing = 20, boxSize = 18, lightOffset = 4, lightSize = 10;
 
@@ -88,13 +88,15 @@ void toggleTile(int x, int y) {
   if (x >= 0 && x < gridW && y >= 0 && y < gridH) { grid[y][x] = !grid[y][x]; }
 }
 void pressButton(int x, int y) {
-  toggleTile(x, y); toggleTile(x - 1, y); toggleTile(x + 1, y); toggleTile(x, y - 1); toggleTile(x, y + 1);
+  toggleTile(x, y); toggleTile(x - 1, y); toggleTile(x + 1, y);
+  toggleTile(x, y - 1); toggleTile(x, y + 1);
 }
 void generatePuzzle() {
   for (int y = 0; y < gridH; y++) { for (int x = 0; x < gridW; x++) { grid[y][x] = false; } }
-  int randomMoves = random(totalTiles * 2, totalTiles * 5); 
+  int randomMoves = random(totalTiles * 2, totalTiles * 5);
   for (int i = 0; i < randomMoves; i++) { pressButton(random(gridW), random(gridH)); }
-  cursorIndex = 0; masterState = 11; showHint = false;
+  cursorIndex = 0; masterState = 11;
+  showHint = false;
 }
 
 // --- Breakout Functions ---
@@ -136,7 +138,6 @@ void drawSimonGrid(int highlight) {
   display.setTextColor(WHITE);
   display.setCursor(35, 2);
   display.print("SIMON SAYS");
-  
   for (int i = 0; i < 4; i++) {
     int drawX = 12 + i * 26;
     int drawY = 24;
@@ -171,7 +172,6 @@ void revealTile(int x, int y) {
   
   msGrid[y][x] |= 0x02; // Set Revealed Bit
   msRevealedCount++;
-  
   if (msGrid[y][x] & 0x01) {
     msGameOver = true;
     masterState = 51; 
@@ -213,7 +213,6 @@ void initMinesweeper() {
   for (int y = 0; y < 4; y++) {
     for (int x = 0; x < 8; x++) {
       if (msGrid[y][x] & 0x01) continue;
-      
       int count = 0;
       for (int dy = -1; dy <= 1; dy++) {
         for (int dx = -1; dx <= 1; dx++) {
@@ -224,7 +223,7 @@ void initMinesweeper() {
           }
         }
       }
-      msGrid[y][x] |= (count << 4); 
+      msGrid[y][x] |= (count << 4);
     }
   }
   masterState = 50;
@@ -257,7 +256,7 @@ void checkTTTWin() {
         if (tttGrid[y][x] == 0) full = false;
       }
     }
-    if (full) tttWinner = 3; 
+    if (full) tttWinner = 3;
   }
   
   if (tttWinner != 0) masterState = 71;
@@ -283,6 +282,20 @@ void setup() {
 
 void loop() {
   // ==========================================
+  // HOME SCREEN GLOBAL INTERRUPT (D5 Long Press)
+  // ==========================================
+  static unsigned long d5Timer = 0;
+  if (digitalRead(btnLeft) == LOW) {
+    if (d5Timer == 0) d5Timer = millis();
+    else if (millis() - d5Timer > 1000) { 
+      masterState = 0; 
+      return; 
+    }
+  } else {
+    d5Timer = 0;
+  }
+
+  // ==========================================
   // MASTER MENU STATE
   // ==========================================
   if (masterState == 0) {
@@ -292,7 +305,7 @@ void loop() {
       delay(200);
       if (masterMenuOption == 0) masterState = 10; 
       if (masterMenuOption == 1) initBreakout();   
-      if (masterMenuOption == 2) initBlockJump();  
+      if (masterMenuOption == 2) initBlockJump();
       if (masterMenuOption == 3) initSimon();      
       if (masterMenuOption == 4) initMinesweeper();
       if (masterMenuOption == 5) initShooter();
@@ -303,7 +316,6 @@ void loop() {
     display.setTextSize(1);
     display.setTextColor(WHITE);
     display.setCursor(20, 0); display.print("- ARCADE MENU -");
-    
     // Dynamic Scrolling Menu logic to fit 7 items on a 64px screen
     const char* menuItems[] = {"Lights Out", "Breakout", "Block Jump", "Simon Says", "Minesweeper", "Space Shooter", "Tic-Tac-Toe"};
     int startItem = masterMenuOption >= 4 ? masterMenuOption - 3 : 0;
@@ -334,7 +346,8 @@ void loop() {
       delay(200);
     }
     display.clearDisplay();
-    display.setCursor(10, 10); display.print("Select Grid Size:");
+    display.setCursor(10, 10);
+    display.print("Select Grid Size:");
     const char* options[] = {"3x3 (Easy)", "5x5 (Normal)", "12x6 (Extreme)"};
     for(int i = 0; i < 3; i++) {
       display.setCursor(20, 30 + (i * 10));
@@ -352,11 +365,12 @@ void loop() {
       while (digitalRead(btnSelect) == LOW && holdTime < 10) { delay(50); holdTime++; }
       if (holdTime >= 10 && gridW == 3) { showHint = !showHint; } 
       else {
-        int cX = cursorIndex % gridW; int cY = cursorIndex / gridW;
-        pressButton(cX, cY); showHint = false; 
+        int cX = cursorIndex % gridW;
+        int cY = cursorIndex / gridW;
+        pressButton(cX, cY); showHint = false;
       }
       while (digitalRead(btnSelect) == LOW) { delay(10); }
-      delay(50); 
+      delay(50);
       
       bool allOff = true;
       for (int y = 0; y < gridH; y++) {
@@ -366,18 +380,23 @@ void loop() {
     }
 
     display.clearDisplay();
-    int offsetX = (128 - (gridW * spacing)) / 2; int offsetY = (64 - (gridH * spacing)) / 2; 
+    int offsetX = (128 - (gridW * spacing)) / 2;
+    int offsetY = (64 - (gridH * spacing)) / 2;
+    
     for (int y = 0; y < gridH; y++) {
       for (int x = 0; x < gridW; x++) {
-        int drawX = offsetX + (x * spacing); int drawY = offsetY + (y * spacing);
+        int drawX = offsetX + (x * spacing);
+        int drawY = offsetY + (y * spacing);
         display.drawRect(drawX, drawY, boxSize, boxSize, WHITE);
+        
         if (grid[y][x]) { display.fillRect(drawX + lightOffset, drawY + lightOffset, lightSize, lightSize, WHITE); }
         if (cursorIndex == (y * gridW + x)) { display.drawRect(drawX - 2, drawY - 2, boxSize + 4, boxSize + 4, WHITE); }
         
         if (showHint && gridW == 3) {
-          bool needsPress = false; int tileIndex = y * 3 + x;
+          bool needsPress = false;
+          int tileIndex = y * 3 + x;
           for (int i = 0; i < 9; i++) {
-            if (grid[i / 3][i % 3] && inv3x3[tileIndex][i]) needsPress = !needsPress; 
+            if (grid[i / 3][i % 3] && inv3x3[tileIndex][i]) needsPress = !needsPress;
           }
           if (needsPress) {
             display.drawLine(drawX, drawY, drawX + boxSize, drawY + boxSize, WHITE);
@@ -409,22 +428,21 @@ void loop() {
 
     ballX += ballVX;
     ballY += ballVY;
-
     if (ballX <= 0 || ballX >= 127) ballVX = -ballVX;
     if (ballY <= 0) ballVY = -ballVY;
-
+    
     if (ballY >= 56 && ballY <= 60 && ballX >= paddleX && ballX <= paddleX + paddleW) {
       ballVY = -ballVY;
       ballY = 55; 
     }
 
     if (ballY < 24) { 
-      int bX_idx = ballX / 11; 
+      int bX_idx = ballX / 11;
       int bY_idx = ballY / 6;  
       
       if (bX_idx >= 0 && bX_idx < 12 && bY_idx >= 0 && bY_idx < 4) {
         if (blocks[bY_idx][bX_idx]) {
-          blocks[bY_idx][bX_idx] = false; 
+          blocks[bY_idx][bX_idx] = false;
           ballVY = -ballVY;               
           blocksRemaining--;
         }
@@ -471,7 +489,6 @@ void loop() {
 
     gdPlayerVY += gdGravity;
     gdPlayerY += gdPlayerVY;
-
     if (gdPlayerY >= 54) {
       gdPlayerY = 54;
       gdPlayerVY = 0;
@@ -496,28 +513,29 @@ void loop() {
     int obsRight = gdObsX + gdObsW;
     int obsTop = 62 - gdObsH;
     int obsBottom = 62;
-
+    
     if (playerRight > obsLeft && playerLeft < obsRight && playerBottom > obsTop && playerTop < obsBottom) {
-      masterState = 31; 
+      masterState = 31;
       delay(500); 
     }
 
     display.clearDisplay();
     display.drawLine(0, 62, 128, 62, WHITE); 
-    display.fillRect(playerLeft, gdPlayerY, 8, 8, WHITE); 
+    display.fillRect(playerLeft, gdPlayerY, 8, 8, WHITE);
     display.fillRect(gdObsX, obsTop, gdObsW, gdObsH, WHITE); 
     
     display.setCursor(0, 0); 
     display.print("Score: "); display.print(gdScore);
     
     display.display();
-    delay(15); 
+    delay(15);
   }
 
   else if (masterState == 31) { 
     display.clearDisplay();
     display.setCursor(20, 10); display.print("GAME OVER");
-    display.setCursor(20, 25); display.print("Score: "); display.print(gdScore);
+    display.setCursor(20, 25);
+    display.print("Score: "); display.print(gdScore);
     display.setCursor(20, 45); display.print("D6: Main Menu");
     
     if (digitalRead(btnSelect) == LOW) { masterState = 0; delay(200); }
@@ -528,7 +546,7 @@ void loop() {
   // SIMON SAYS STATES
   // ==========================================
   else if (masterState == 40) {
-    delay(800); 
+    delay(800);
     for (int i = 0; i < simonRound; i++) {
       drawSimonGrid(simonSeq[i]);
       delay(400);
@@ -595,24 +613,20 @@ void loop() {
     if (digitalRead(btnSelect) == LOW) {
       int holdTime = 0;
       while (digitalRead(btnSelect) == LOW && holdTime < 10) { delay(50); holdTime++; }
+      
       int cX = msCursor % 8;
       int cY = msCursor / 8;
       
       if (holdTime >= 10) {
-        if (!(msGrid[cY][cX] & 0x02)) { 
-          msGrid[cY][cX] ^= 0x04; // Toggle Flag
-        }
+        if (!(msGrid[cY][cX] & 0x02)) { msGrid[cY][cX] ^= 0x04; } // Toggle Flag
       } else {
         if (!(msGrid[cY][cX] & 0x04)) { 
           revealTile(cX, cY);
-          
           if (!msGameOver) {
             bool won = true;
             for (int y = 0; y < 4; y++) {
               for (int x = 0; x < 8; x++) {
-                if (!(msGrid[y][x] & 0x01) && !(msGrid[y][x] & 0x02)) {
-                  won = false;
-                }
+                if (!(msGrid[y][x] & 0x01) && !(msGrid[y][x] & 0x02)) { won = false; }
               }
             }
             if (won) { masterState = 51; }
@@ -643,7 +657,7 @@ void loop() {
               display.setCursor(drawX + 3, drawY + 1);
               display.print(count);
             } else {
-              display.drawPixel(drawX + 5, drawY + 5, WHITE); 
+              display.drawPixel(drawX + 5, drawY + 5, WHITE);
             }
           }
         } else if (msGrid[y][x] & 0x04) {
@@ -681,7 +695,6 @@ void loop() {
   // SPACE SHOOTER STATES
   // ==========================================
   else if (masterState == 60) {
-    // Kinematic Inputs
     if (digitalRead(btnLeft) == LOW) shipX -= 4;
     if (digitalRead(btnRight) == LOW) shipX += 4;
     
@@ -694,14 +707,12 @@ void loop() {
       laserY = 54;
     }
 
-    // Alien Physics
     alienX += alienDir;
     if (alienX > 118 || alienX < 0) {
       alienDir = -alienDir;
-      alienY += 6; 
+      alienY += 6;
     }
 
-    // Laser Physics & AABB Collision
     if (laserActive) {
       laserY -= 6;
       if (laserY < 0) laserActive = false;
@@ -711,12 +722,12 @@ void loop() {
         shooterScore++;
         alienY = 0;
         alienX = random(10, 110);
-        alienDir = (alienDir > 0) ? alienDir + 1 : alienDir - 1; // Increase speed
+        alienDir = (alienDir > 0) ? alienDir + 1 : alienDir - 1; 
       }
     }
 
     if (alienY > 50) {
-      masterState = 61; // Game Over state
+      masterState = 61;
       delay(500);
     }
 
@@ -738,7 +749,8 @@ void loop() {
   else if (masterState == 61) {
     display.clearDisplay();
     display.setCursor(20, 20); display.print("EARTH INVADED!");
-    display.setCursor(20, 35); display.print("Score: "); display.print(shooterScore);
+    display.setCursor(20, 35); display.print("Score: ");
+    display.print(shooterScore);
     display.setCursor(20, 50); display.print("D6: Main Menu");
     if (digitalRead(btnSelect) == LOW) { masterState = 0; delay(200); }
     display.display();
@@ -775,24 +787,41 @@ void loop() {
   }
 
   else if (masterState == 70) {
-    if (tttMode == 0 && tttTurn == 2) { // CPU TURN
-      delay(500); // Artificial thinking delay
+    if (tttMode == 0 && tttTurn == 2) { // CPU TURN (Minimax Heuristic)
+      delay(500); 
+      int choice = -1;
       
-      int emptyCells[9];
-      int emptyCount = 0;
-      
-      // Map available 2D spaces into 1D array
-      for(int i = 0; i < 9; i++) {
-        if(tttGrid[i / 3][i % 3] == 0) {
-          emptyCells[emptyCount] = i;
-          emptyCount++;
+      // 1. Evaluate immediate Win (2) or Block (1)
+      for (int p = 2; p >= 1; p--) {
+        if (choice != -1) break;
+        for (int i = 0; i < 9; i++) {
+          int r = i / 3, c = i % 3;
+          if (tttGrid[r][c] == 0) {
+            tttGrid[r][c] = p;
+            bool wins = false;
+            for (int j = 0; j < 3; j++) {
+              if (tttGrid[j][0] == p && tttGrid[j][1] == p && tttGrid[j][2] == p) wins = true;
+              if (tttGrid[0][j] == p && tttGrid[1][j] == p && tttGrid[2][j] == p) wins = true;
+            }
+            if (tttGrid[0][0] == p && tttGrid[1][1] == p && tttGrid[2][2] == p) wins = true;
+            if (tttGrid[0][2] == p && tttGrid[1][1] == p && tttGrid[2][0] == p) wins = true;
+            tttGrid[r][c] = 0; 
+            if (wins) { choice = i; break; }
+          }
         }
       }
       
-      // Hardware Entropy Selection
-      if(emptyCount > 0) {
-        int choice = emptyCells[random(emptyCount)];
-        tttGrid[choice / 3][choice % 3] = 2; // CPU places O
+      // 2. Hardware Entropy Fallback
+      if (choice == -1) {
+        int emptyCells[9], emptyCount = 0;
+        for(int i = 0; i < 9; i++) {
+          if(tttGrid[i / 3][i % 3] == 0) { emptyCells[emptyCount++] = i; }
+        }
+        if(emptyCount > 0) choice = emptyCells[random(emptyCount)];
+      }
+      
+      if (choice != -1) {
+        tttGrid[choice / 3][choice % 3] = 2;
         tttTurn = 1;
         checkTTTWin();
       }
@@ -841,7 +870,7 @@ void loop() {
       }
     }
     
-    display.setCursor(0, 0); 
+    display.setCursor(0, 0);
     display.print(tttTurn == 1 ? "P1" : (tttMode == 0 ? "CPU" : "P2"));
     display.display();
   }
@@ -849,8 +878,12 @@ void loop() {
   else if (masterState == 71) {
     display.clearDisplay();
     display.setCursor(30, 20);
+    
     if (tttWinner == 1) display.print("PLAYER 1 WINS!");
-    else if (tttWinner == 2) display.print("PLAYER 2 WINS!");
+    else if (tttWinner == 2) {
+      if (tttMode == 0) display.print("CPU WINS!"); 
+      else display.print("PLAYER 2 WINS!"); 
+    }
     else display.print("IT'S A TIE!");
     
     display.setCursor(30, 40); display.print("D6: Main Menu");
